@@ -1,5 +1,5 @@
 import { NetInfo, Platform, View } from 'react-native';
-
+import {MongoID} from '../lib/mongo-id'
 import reactMixin from 'react-mixin';
 import Trackr from 'trackr';
 import EJSON from 'ejson';
@@ -129,10 +129,18 @@ module.exports = {
       if (!Data.db[message.collection]) {
         Data.db.addCollection(message.collection);
       }
-      Data.db[message.collection].upsert({
-        _id: message.id,
-        ...message.fields,
-      });
+      if(message.id.length === 24){
+        Data.db[message.collection].upsert({
+          _id: new MongoID.ObjectID(message.id),
+          ...message.fields,
+        });
+      }else{
+        Data.db[message.collection].upsert({
+          _id: message.id,
+          ...message.fields,
+        });
+      }
+   
     });
 
     Data.ddp.on('ready', message => {
@@ -159,13 +167,22 @@ module.exports = {
           unset[field] = null;
         });
       }
-
+      if(message.id.length === 24){
       Data.db[message.collection] &&
+        Data.db[message.collection].upsert({
+          _id: new MongoID.ObjectID(message.id),
+          ...message.fields,
+          ...unset,
+        });
+      }else{
+        Data.db[message.collection] &&
         Data.db[message.collection].upsert({
           _id: message.id,
           ...message.fields,
           ...unset,
         });
+      }
+
     });
 
     Data.ddp.on('removed', message => {
