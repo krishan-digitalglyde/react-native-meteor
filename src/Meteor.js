@@ -1,5 +1,4 @@
 import { NetInfo, Platform, View } from 'react-native';
-import {MongoID} from '../lib/mongo-id'
 import reactMixin from 'react-mixin';
 import Trackr from 'trackr';
 import EJSON from 'ejson';
@@ -131,7 +130,7 @@ module.exports = {
       }
       if(message.id.length === 24){
         Data.db[message.collection].upsert({
-          _id: new MongoID.ObjectID(message.id),
+          _id: message.id,
           ...message.fields,
         });
       }else{
@@ -170,7 +169,7 @@ module.exports = {
       if(message.id.length === 24){
       Data.db[message.collection] &&
         Data.db[message.collection].upsert({
-          _id: new MongoID.ObjectID(message.id),
+          _id: message.id,
           ...message.fields,
           ...unset,
         });

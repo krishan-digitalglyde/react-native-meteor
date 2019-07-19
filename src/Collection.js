@@ -1,7 +1,7 @@
 import Tracker from 'trackr';
 import EJSON from 'ejson';
 import _ from 'underscore';
-
+import {MongoID} from '../lib/mongo-id';
 import Data from './Data';
 import Random from '../lib/Random';
 import call from './Call';
@@ -134,9 +134,19 @@ export class Collection {
 
     // change mini mongo for optimize UI changes
     this._collection.upsert({ _id: id, ...modifier.$set });
-
+      if(id.length > 20 ){
+        Data.waitDdpConnected(() => {
+          call(`/${this._name}/update`, { _id: new MongoID.ObjectID(id) }, modifier, err => {
+            if (err) {
+              return callback(err);
+            }
+    
+            callback(null, id);
+          });
+        });
+      }else{
     Data.waitDdpConnected(() => {
-      call(`/${this._name}/update`, { _id: id }, modifier, err => {
+      call(`/${this._name}/update`, { _id: id}, modifier, err => {
         if (err) {
           return callback(err);
         }
@@ -145,13 +155,24 @@ export class Collection {
       });
     });
   }
+  }
 
   remove(id, callback = () => {}) {
     const element = this.findOne(id);
 
     if (element) {
       this._collection.del(element._id);
-
+      if(id.length > 20 ){
+      Data.waitDdpConnected(() => {
+        call(`/${this._name}/remove`, { _id: new MongoID.ObjectID(id) }, (err, res) => {
+          if (err) {
+            this._collection.upsert(element);
+            return callback(err);
+          }
+          callback(null, res);
+        });
+      });
+    }else{
       Data.waitDdpConnected(() => {
         call(`/${this._name}/remove`, { _id: id }, (err, res) => {
           if (err) {
@@ -161,6 +182,7 @@ export class Collection {
           callback(null, res);
         });
       });
+    }
     } else {
       callback(`No document with _id : ${id}`);
     }
